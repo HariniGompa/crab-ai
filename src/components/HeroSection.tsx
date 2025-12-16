@@ -38,7 +38,11 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: "0.3s" }}>
-            <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg" asChild>
+            <Button 
+              size="lg" 
+              className="h-14 px-10 text-lg font-bold shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground ring-2 ring-primary/20 hover:ring-primary/40 transition-all" 
+              asChild
+            >
               <Link to="/signup">
                 Get Started Free
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -47,12 +51,16 @@ const HeroSection = () => {
             <Button 
               variant="outline" 
               size="lg" 
-              className="h-12 px-8 text-base"
+              className="h-12 px-8 text-base border-border/50 hover:bg-muted"
               onClick={scrollToFeatures}
             >
               Learn More
             </Button>
           </div>
+
+          <p className="mt-4 text-sm text-muted-foreground animate-fade-up" style={{ animationDelay: "0.4s" }}>
+            No credit card required • Free forever plan available
+          </p>
         </div>
       </div>
 
