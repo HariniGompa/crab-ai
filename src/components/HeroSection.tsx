@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 const HeroSection = () => {
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById("features");
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center hero-gradient overflow-hidden pt-16">
       {/* Background decorations */}
@@ -31,14 +38,19 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up" style={{ animationDelay: "0.3s" }}>
-            <Button variant="hero" size="xl" asChild>
+            <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg" asChild>
               <Link to="/signup">
                 Get Started Free
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>
-            <Button variant="glass" size="lg" asChild>
-              <Link to="/#features">Learn More</Link>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="h-12 px-8 text-base"
+              onClick={scrollToFeatures}
+            >
+              Learn More
             </Button>
           </div>
         </div>
