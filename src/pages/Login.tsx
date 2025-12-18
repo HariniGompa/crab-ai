@@ -3,10 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shell, Mail, Lock, Eye, EyeOff, KeyRound, CheckCircle, Target, FileEdit, Sparkles } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Shell, Mail, Lock, Eye, EyeOff, CheckCircle, Target, FileEdit, Sparkles } from "lucide-react";
 
-type Step = "credentials" | "otp" | "success";
+type Step = "credentials" | "success";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,19 +13,9 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep("otp");
-    }, 1000);
-  };
-
-  const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setTimeout(() => {
@@ -110,9 +99,8 @@ const Login = () => {
 
           {/* Progress indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className={`w-8 h-1 rounded-full transition-colors ${["credentials", "otp", "success"].includes(step) ? "bg-primary" : "bg-muted"}`} />
-            <div className={`w-8 h-1 rounded-full transition-colors ${["otp", "success"].includes(step) ? "bg-primary" : "bg-muted"}`} />
-            <div className={`w-8 h-1 rounded-full transition-colors ${step === "success" ? "bg-primary" : "bg-muted"}`} />
+            <div className={`w-10 h-1 rounded-full transition-colors ${["credentials", "success"].includes(step) ? "bg-primary" : "bg-muted"}`} />
+            <div className={`w-10 h-1 rounded-full transition-colors ${step === "success" ? "bg-primary" : "bg-muted"}`} />
           </div>
 
           {step === "credentials" && (
@@ -185,60 +173,6 @@ const Login = () => {
                   Sign up
                 </Link>
               </p>
-            </>
-          )}
-
-          {step === "otp" && (
-            <>
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mx-auto mb-4">
-                <KeyRound className="w-6 h-6 text-primary" />
-              </div>
-              <h1 className="text-xl font-bold text-center mb-1">Verify your identity</h1>
-              <p className="text-muted-foreground text-center mb-6 text-sm">
-                We sent a code to <span className="font-medium text-foreground">{email}</span>
-              </p>
-
-              <form onSubmit={handleOtpSubmit} className="space-y-6">
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-11" 
-                  disabled={otp.length < 6 || isLoading}
-                >
-                  {isLoading ? "Verifying..." : "Verify"}
-                </Button>
-              </form>
-
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Didn't receive the code?{" "}
-                <button 
-                  type="button"
-                  onClick={() => {/* Resend logic */}}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Resend
-                </button>
-              </p>
-
-              <button 
-                type="button"
-                onClick={() => setStep("credentials")}
-                className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ← Back to sign in
-              </button>
             </>
           )}
 
