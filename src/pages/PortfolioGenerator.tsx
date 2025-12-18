@@ -3,8 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Layout, Download, ExternalLink, Check, Upload, User, Briefcase, Settings2 } from "lucide-react";
-
+import { Layout, Download, ExternalLink, Check, Upload, User, Briefcase, Settings2, FileText, RefreshCw, Edit3 } from "lucide-react";
 const sections = [
   { id: "about", label: "About Me", default: true },
   { id: "skills", label: "Skills", default: true },
@@ -53,6 +52,7 @@ const PortfolioGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [portfolioGenerated, setPortfolioGenerated] = useState(false);
   const [customTemplateFile, setCustomTemplateFile] = useState<File | null>(null);
+  const [resumeLinked, setResumeLinked] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePortfolioTypeChange = (type: PortfolioType) => {
@@ -101,9 +101,68 @@ const PortfolioGenerator = () => {
           <div>
             <h1 className="text-xl font-bold text-foreground">Portfolio Generator</h1>
             <p className="text-muted-foreground text-sm">
-              Generate a beautiful HTML portfolio website
+              Auto-populates from your resume with full customization
             </p>
           </div>
+        </div>
+
+        {/* Resume Data Source Indicator */}
+        <div className="glass-card p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-foreground">Data Source: Your Resume</h3>
+                <p className="text-xs text-muted-foreground">
+                  {resumeLinked 
+                    ? "Portfolio will be auto-populated from your latest resume" 
+                    : "Enter all information manually"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  id="resume-link" 
+                  checked={resumeLinked} 
+                  onCheckedChange={setResumeLinked}
+                />
+                <Label htmlFor="resume-link" className="text-xs text-muted-foreground cursor-pointer">
+                  Use resume data
+                </Label>
+              </div>
+              {resumeLinked && (
+                <Button variant="outline" size="sm" className="h-8 text-xs">
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Sync
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="h-8 text-xs">
+                <Edit3 className="w-3 h-3 mr-1" />
+                Customize
+              </Button>
+            </div>
+          </div>
+          {resumeLinked && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Check className="w-3 h-3 text-primary" /> Name & Contact
+                </span>
+                <span className="flex items-center gap-1">
+                  <Check className="w-3 h-3 text-primary" /> Skills
+                </span>
+                <span className="flex items-center gap-1">
+                  <Check className="w-3 h-3 text-primary" /> Experience
+                </span>
+                <span className="flex items-center gap-1">
+                  <Check className="w-3 h-3 text-primary" /> Education
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
