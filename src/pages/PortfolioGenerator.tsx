@@ -3,7 +3,12 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Layout, Download, ExternalLink, Check, Upload, User, Briefcase, Settings2, FileText, RefreshCw, Edit3 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Layout, Download, ExternalLink, Check, Upload, User, Briefcase, Settings2, FileText, RefreshCw, Edit3, Plus, Trash2, Save } from "lucide-react";
+
 const sections = [
   { id: "about", label: "About Me", default: true },
   { id: "skills", label: "Skills", default: true },
@@ -15,6 +20,96 @@ const sections = [
 
 type PortfolioType = "student" | "experienced" | "custom";
 type TemplateType = "minimal" | "modern" | "creative";
+
+interface ResumeData {
+  personal: {
+    fullName: string;
+    title: string;
+    email: string;
+    phone: string;
+    location: string;
+    website: string;
+    linkedin: string;
+    github: string;
+  };
+  about: string;
+  skills: string[];
+  experience: Array<{
+    id: string;
+    company: string;
+    role: string;
+    duration: string;
+    description: string;
+  }>;
+  projects: Array<{
+    id: string;
+    name: string;
+    description: string;
+    tech: string;
+    link: string;
+  }>;
+  education: Array<{
+    id: string;
+    institution: string;
+    degree: string;
+    year: string;
+  }>;
+}
+
+const defaultResumeData: ResumeData = {
+  personal: {
+    fullName: "John Doe",
+    title: "Full Stack Developer",
+    email: "john.doe@email.com",
+    phone: "+1 (555) 123-4567",
+    location: "San Francisco, CA",
+    website: "johndoe.dev",
+    linkedin: "linkedin.com/in/johndoe",
+    github: "github.com/johndoe",
+  },
+  about: "Passionate full-stack developer with 5+ years of experience building scalable web applications. Skilled in React, Node.js, and cloud technologies. Love turning complex problems into elegant solutions.",
+  skills: ["React", "TypeScript", "Node.js", "Python", "PostgreSQL", "AWS", "Docker", "Git"],
+  experience: [
+    {
+      id: "1",
+      company: "Tech Corp",
+      role: "Senior Developer",
+      duration: "2021 - Present",
+      description: "Led development of customer-facing applications serving 100K+ users.",
+    },
+    {
+      id: "2",
+      company: "StartupXYZ",
+      role: "Full Stack Developer",
+      duration: "2019 - 2021",
+      description: "Built MVP from scratch, contributed to 3x revenue growth.",
+    },
+  ],
+  projects: [
+    {
+      id: "1",
+      name: "E-commerce Platform",
+      description: "Full-featured online store with payment integration",
+      tech: "React, Node.js, Stripe",
+      link: "github.com/johndoe/ecommerce",
+    },
+    {
+      id: "2",
+      name: "Task Management App",
+      description: "Real-time collaborative task board",
+      tech: "Next.js, Supabase",
+      link: "github.com/johndoe/taskapp",
+    },
+  ],
+  education: [
+    {
+      id: "1",
+      institution: "University of California",
+      degree: "B.S. Computer Science",
+      year: "2019",
+    },
+  ],
+};
 
 const portfolioTypes = [
   { id: "student" as PortfolioType, label: "Student / Fresher", icon: User, description: "No work experience" },
@@ -53,6 +148,9 @@ const PortfolioGenerator = () => {
   const [portfolioGenerated, setPortfolioGenerated] = useState(false);
   const [customTemplateFile, setCustomTemplateFile] = useState<File | null>(null);
   const [resumeLinked, setResumeLinked] = useState(true);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [resumeData, setResumeData] = useState<ResumeData>(defaultResumeData);
+  const [newSkill, setNewSkill] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePortfolioTypeChange = (type: PortfolioType) => {
@@ -62,7 +160,6 @@ const PortfolioGenerator = () => {
     } else if (type === "experienced") {
       setSelectedSections(prev => ({ ...prev, experience: true }));
     }
-    // Custom type doesn't change anything
   };
 
   const toggleSection = (id: string) => {
@@ -86,6 +183,93 @@ const PortfolioGenerator = () => {
         setCustomTemplateFile(file);
       }
     }
+  };
+
+  const updatePersonal = (field: keyof ResumeData['personal'], value: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      personal: { ...prev.personal, [field]: value }
+    }));
+  };
+
+  const addSkill = () => {
+    if (newSkill.trim()) {
+      setResumeData(prev => ({
+        ...prev,
+        skills: [...prev.skills, newSkill.trim()]
+      }));
+      setNewSkill("");
+    }
+  };
+
+  const removeSkill = (index: number) => {
+    setResumeData(prev => ({
+      ...prev,
+      skills: prev.skills.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addExperience = () => {
+    setResumeData(prev => ({
+      ...prev,
+      experience: [...prev.experience, { id: Date.now().toString(), company: "", role: "", duration: "", description: "" }]
+    }));
+  };
+
+  const updateExperience = (id: string, field: string, value: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      experience: prev.experience.map(exp => exp.id === id ? { ...exp, [field]: value } : exp)
+    }));
+  };
+
+  const removeExperience = (id: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      experience: prev.experience.filter(exp => exp.id !== id)
+    }));
+  };
+
+  const addProject = () => {
+    setResumeData(prev => ({
+      ...prev,
+      projects: [...prev.projects, { id: Date.now().toString(), name: "", description: "", tech: "", link: "" }]
+    }));
+  };
+
+  const updateProject = (id: string, field: string, value: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      projects: prev.projects.map(proj => proj.id === id ? { ...proj, [field]: value } : proj)
+    }));
+  };
+
+  const removeProject = (id: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      projects: prev.projects.filter(proj => proj.id !== id)
+    }));
+  };
+
+  const addEducation = () => {
+    setResumeData(prev => ({
+      ...prev,
+      education: [...prev.education, { id: Date.now().toString(), institution: "", degree: "", year: "" }]
+    }));
+  };
+
+  const updateEducation = (id: string, field: string, value: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      education: prev.education.map(edu => edu.id === id ? { ...edu, [field]: value } : edu)
+    }));
+  };
+
+  const removeEducation = (id: string) => {
+    setResumeData(prev => ({
+      ...prev,
+      education: prev.education.filter(edu => edu.id !== id)
+    }));
   };
 
   const currentTemplate = templates.find(t => t.id === selectedTemplate)!;
@@ -139,7 +323,7 @@ const PortfolioGenerator = () => {
                   Sync
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="h-8 text-xs">
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setIsEditorOpen(true)}>
                 <Edit3 className="w-3 h-3 mr-1" />
                 Customize
               </Button>
@@ -391,6 +575,272 @@ const PortfolioGenerator = () => {
           </div>
         </div>
       </div>
+
+      {/* Resume Data Editor Sheet */}
+      <Sheet open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+        <SheetContent className="w-full sm:max-w-xl bg-background">
+          <SheetHeader>
+            <SheetTitle className="text-foreground">Edit Portfolio Data</SheetTitle>
+            <SheetDescription>
+              Customize the information that will appear in your portfolio
+            </SheetDescription>
+          </SheetHeader>
+          
+          <ScrollArea className="h-[calc(100vh-180px)] mt-4 pr-4">
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <User className="w-4 h-4" /> Personal Information
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Label className="text-xs text-muted-foreground">Full Name</Label>
+                    <Input
+                      value={resumeData.personal.fullName}
+                      onChange={(e) => updatePersonal('fullName', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs text-muted-foreground">Professional Title</Label>
+                    <Input
+                      value={resumeData.personal.title}
+                      onChange={(e) => updatePersonal('title', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Email</Label>
+                    <Input
+                      type="email"
+                      value={resumeData.personal.email}
+                      onChange={(e) => updatePersonal('email', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Phone</Label>
+                    <Input
+                      value={resumeData.personal.phone}
+                      onChange={(e) => updatePersonal('phone', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Location</Label>
+                    <Input
+                      value={resumeData.personal.location}
+                      onChange={(e) => updatePersonal('location', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Website</Label>
+                    <Input
+                      value={resumeData.personal.website}
+                      onChange={(e) => updatePersonal('website', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">LinkedIn</Label>
+                    <Input
+                      value={resumeData.personal.linkedin}
+                      onChange={(e) => updatePersonal('linkedin', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">GitHub</Label>
+                    <Input
+                      value={resumeData.personal.github}
+                      onChange={(e) => updatePersonal('github', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* About */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">About Me</h3>
+                <Textarea
+                  value={resumeData.about}
+                  onChange={(e) => setResumeData(prev => ({ ...prev, about: e.target.value }))}
+                  rows={4}
+                  placeholder="Write a brief introduction about yourself..."
+                />
+              </div>
+
+              {/* Skills */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">Skills</h3>
+                <div className="flex flex-wrap gap-2">
+                  {resumeData.skills.map((skill, index) => (
+                    <span 
+                      key={index} 
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs text-foreground"
+                    >
+                      {skill}
+                      <button onClick={() => removeSkill(index)} className="hover:text-destructive">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    placeholder="Add a skill..."
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                    className="flex-1"
+                  />
+                  <Button size="sm" variant="outline" onClick={addSkill}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Experience */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" /> Work Experience
+                  </h3>
+                  <Button size="sm" variant="ghost" onClick={addExperience}>
+                    <Plus className="w-4 h-4 mr-1" /> Add
+                  </Button>
+                </div>
+                {resumeData.experience.map((exp) => (
+                  <div key={exp.id} className="p-3 border border-border rounded-md space-y-2 bg-muted/30">
+                    <div className="flex justify-between">
+                      <Input
+                        value={exp.company}
+                        onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                        placeholder="Company"
+                        className="flex-1"
+                      />
+                      <Button size="icon" variant="ghost" onClick={() => removeExperience(exp.id)} className="ml-2 text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={exp.role}
+                        onChange={(e) => updateExperience(exp.id, 'role', e.target.value)}
+                        placeholder="Role"
+                      />
+                      <Input
+                        value={exp.duration}
+                        onChange={(e) => updateExperience(exp.id, 'duration', e.target.value)}
+                        placeholder="Duration"
+                      />
+                    </div>
+                    <Textarea
+                      value={exp.description}
+                      onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                      placeholder="Description"
+                      rows={2}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Projects */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">Projects</h3>
+                  <Button size="sm" variant="ghost" onClick={addProject}>
+                    <Plus className="w-4 h-4 mr-1" /> Add
+                  </Button>
+                </div>
+                {resumeData.projects.map((proj) => (
+                  <div key={proj.id} className="p-3 border border-border rounded-md space-y-2 bg-muted/30">
+                    <div className="flex justify-between">
+                      <Input
+                        value={proj.name}
+                        onChange={(e) => updateProject(proj.id, 'name', e.target.value)}
+                        placeholder="Project Name"
+                        className="flex-1"
+                      />
+                      <Button size="icon" variant="ghost" onClick={() => removeProject(proj.id)} className="ml-2 text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={proj.description}
+                      onChange={(e) => updateProject(proj.id, 'description', e.target.value)}
+                      placeholder="Description"
+                      rows={2}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={proj.tech}
+                        onChange={(e) => updateProject(proj.id, 'tech', e.target.value)}
+                        placeholder="Technologies"
+                      />
+                      <Input
+                        value={proj.link}
+                        onChange={(e) => updateProject(proj.id, 'link', e.target.value)}
+                        placeholder="Link"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Education */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">Education</h3>
+                  <Button size="sm" variant="ghost" onClick={addEducation}>
+                    <Plus className="w-4 h-4 mr-1" /> Add
+                  </Button>
+                </div>
+                {resumeData.education.map((edu) => (
+                  <div key={edu.id} className="p-3 border border-border rounded-md space-y-2 bg-muted/30">
+                    <div className="flex justify-between">
+                      <Input
+                        value={edu.institution}
+                        onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
+                        placeholder="Institution"
+                        className="flex-1"
+                      />
+                      <Button size="icon" variant="ghost" onClick={() => removeEducation(edu.id)} className="ml-2 text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={edu.degree}
+                        onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                        placeholder="Degree"
+                      />
+                      <Input
+                        value={edu.year}
+                        onChange={(e) => updateEducation(edu.id, 'year', e.target.value)}
+                        placeholder="Year"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ScrollArea>
+
+          <SheetFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsEditorOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setIsEditorOpen(false)}>
+              <Save className="w-4 h-4 mr-1" />
+              Save Changes
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 };
