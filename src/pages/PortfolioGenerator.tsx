@@ -7,7 +7,66 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Layout, Download, ExternalLink, Check, Upload, User, Briefcase, Settings2, FileText, RefreshCw, Edit3, Plus, Trash2, Save } from "lucide-react";
+import { Layout, Download, ExternalLink, Check, Upload, User, Briefcase, Settings2, FileText, RefreshCw, Edit3, Plus, Trash2, Save, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
+
+interface SortableItemProps {
+  id: string;
+  children: React.ReactNode;
+}
+
+const SortableItem = ({ id, children }: SortableItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "relative group",
+        isDragging && "z-50 opacity-90 shadow-lg"
+      )}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-1 top-3 cursor-grab active:cursor-grabbing opacity-40 group-hover:opacity-100 transition-opacity z-10"
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </div>
+      {children}
+    </div>
+  );
+};
 
 const sections = [
   { id: "about", label: "About Me", default: true },
@@ -197,6 +256,55 @@ const PortfolioGenerator = () => {
   const clearFieldError = (field: keyof ValidationErrors) => {
     if (validationErrors[field]) {
       setValidationErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEndExperience = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setResumeData(prev => {
+        const oldIndex = prev.experience.findIndex(item => item.id === active.id);
+        const newIndex = prev.experience.findIndex(item => item.id === over.id);
+        return { ...prev, experience: arrayMove(prev.experience, oldIndex, newIndex) };
+      });
+    }
+  };
+
+  const handleDragEndProjects = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setResumeData(prev => {
+        const oldIndex = prev.projects.findIndex(item => item.id === active.id);
+        const newIndex = prev.projects.findIndex(item => item.id === over.id);
+        return { ...prev, projects: arrayMove(prev.projects, oldIndex, newIndex) };
+      });
+    }
+  };
+
+  const handleDragEndEducation = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setResumeData(prev => {
+        const oldIndex = prev.education.findIndex(item => item.id === active.id);
+        const newIndex = prev.education.findIndex(item => item.id === over.id);
+        return { ...prev, education: arrayMove(prev.education, oldIndex, newIndex) };
+      });
+    }
+  };
+
+  const handleDragEndSkills = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setResumeData(prev => {
+        const oldIndex = Number(active.id);
+        const newIndex = Number(over.id);
+        return { ...prev, skills: arrayMove(prev.skills, oldIndex, newIndex) };
+      });
     }
   };
 
@@ -740,20 +848,27 @@ const PortfolioGenerator = () => {
 
               {/* Skills */}
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {resumeData.skills.map((skill, index) => (
-                    <span 
-                      key={index} 
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs text-foreground"
-                    >
-                      {skill}
-                      <button onClick={() => removeSkill(index)} className="hover:text-destructive">
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">Skills</h3>
+                  <span className="text-[10px] text-muted-foreground">Drag to reorder</span>
                 </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndSkills}>
+                  <SortableContext items={resumeData.skills.map((_, i) => i.toString())} strategy={verticalListSortingStrategy}>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeData.skills.map((skill, index) => (
+                        <SortableItem key={index} id={index.toString()}>
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs text-foreground cursor-grab active:cursor-grabbing">
+                            <GripVertical className="w-3 h-3 text-muted-foreground" />
+                            {skill}
+                            <button onClick={() => removeSkill(index)} className="hover:text-destructive">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </span>
+                        </SortableItem>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
                 <div className="flex gap-2">
                   <Input
                     value={newSkill}
@@ -774,123 +889,150 @@ const PortfolioGenerator = () => {
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <Briefcase className="w-4 h-4" /> Work Experience
                   </h3>
-                  <Button size="sm" variant="ghost" onClick={addExperience}>
-                    <Plus className="w-4 h-4 mr-1" /> Add
-                  </Button>
-                </div>
-                {resumeData.experience.map((exp) => (
-                  <div key={exp.id} className="p-3 border border-border rounded-md space-y-2 bg-muted/30">
-                    <div className="flex justify-between">
-                      <Input
-                        value={exp.company}
-                        onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
-                        placeholder="Company"
-                        className="flex-1"
-                      />
-                      <Button size="icon" variant="ghost" onClick={() => removeExperience(exp.id)} className="ml-2 text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        value={exp.role}
-                        onChange={(e) => updateExperience(exp.id, 'role', e.target.value)}
-                        placeholder="Role"
-                      />
-                      <Input
-                        value={exp.duration}
-                        onChange={(e) => updateExperience(exp.id, 'duration', e.target.value)}
-                        placeholder="Duration"
-                      />
-                    </div>
-                    <Textarea
-                      value={exp.description}
-                      onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
-                      placeholder="Description"
-                      rows={2}
-                    />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">Drag to reorder</span>
+                    <Button size="sm" variant="ghost" onClick={addExperience}>
+                      <Plus className="w-4 h-4 mr-1" /> Add
+                    </Button>
                   </div>
-                ))}
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndExperience}>
+                  <SortableContext items={resumeData.experience.map(exp => exp.id)} strategy={verticalListSortingStrategy}>
+                    {resumeData.experience.map((exp) => (
+                      <SortableItem key={exp.id} id={exp.id}>
+                        <div className="p-3 pl-7 border border-border rounded-md space-y-2 bg-muted/30">
+                          <div className="flex justify-between">
+                            <Input
+                              value={exp.company}
+                              onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                              placeholder="Company"
+                              className="flex-1"
+                            />
+                            <Button size="icon" variant="ghost" onClick={() => removeExperience(exp.id)} className="ml-2 text-destructive hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              value={exp.role}
+                              onChange={(e) => updateExperience(exp.id, 'role', e.target.value)}
+                              placeholder="Role"
+                            />
+                            <Input
+                              value={exp.duration}
+                              onChange={(e) => updateExperience(exp.id, 'duration', e.target.value)}
+                              placeholder="Duration"
+                            />
+                          </div>
+                          <Textarea
+                            value={exp.description}
+                            onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                            placeholder="Description"
+                            rows={2}
+                          />
+                        </div>
+                      </SortableItem>
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </div>
 
               {/* Projects */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-foreground">Projects</h3>
-                  <Button size="sm" variant="ghost" onClick={addProject}>
-                    <Plus className="w-4 h-4 mr-1" /> Add
-                  </Button>
-                </div>
-                {resumeData.projects.map((proj) => (
-                  <div key={proj.id} className="p-3 border border-border rounded-md space-y-2 bg-muted/30">
-                    <div className="flex justify-between">
-                      <Input
-                        value={proj.name}
-                        onChange={(e) => updateProject(proj.id, 'name', e.target.value)}
-                        placeholder="Project Name"
-                        className="flex-1"
-                      />
-                      <Button size="icon" variant="ghost" onClick={() => removeProject(proj.id)} className="ml-2 text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Textarea
-                      value={proj.description}
-                      onChange={(e) => updateProject(proj.id, 'description', e.target.value)}
-                      placeholder="Description"
-                      rows={2}
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        value={proj.tech}
-                        onChange={(e) => updateProject(proj.id, 'tech', e.target.value)}
-                        placeholder="Technologies"
-                      />
-                      <Input
-                        value={proj.link}
-                        onChange={(e) => updateProject(proj.id, 'link', e.target.value)}
-                        placeholder="Link"
-                      />
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">Drag to reorder</span>
+                    <Button size="sm" variant="ghost" onClick={addProject}>
+                      <Plus className="w-4 h-4 mr-1" /> Add
+                    </Button>
                   </div>
-                ))}
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndProjects}>
+                  <SortableContext items={resumeData.projects.map(proj => proj.id)} strategy={verticalListSortingStrategy}>
+                    {resumeData.projects.map((proj) => (
+                      <SortableItem key={proj.id} id={proj.id}>
+                        <div className="p-3 pl-7 border border-border rounded-md space-y-2 bg-muted/30">
+                          <div className="flex justify-between">
+                            <Input
+                              value={proj.name}
+                              onChange={(e) => updateProject(proj.id, 'name', e.target.value)}
+                              placeholder="Project Name"
+                              className="flex-1"
+                            />
+                            <Button size="icon" variant="ghost" onClick={() => removeProject(proj.id)} className="ml-2 text-destructive hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <Textarea
+                            value={proj.description}
+                            onChange={(e) => updateProject(proj.id, 'description', e.target.value)}
+                            placeholder="Description"
+                            rows={2}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              value={proj.tech}
+                              onChange={(e) => updateProject(proj.id, 'tech', e.target.value)}
+                              placeholder="Technologies"
+                            />
+                            <Input
+                              value={proj.link}
+                              onChange={(e) => updateProject(proj.id, 'link', e.target.value)}
+                              placeholder="Link"
+                            />
+                          </div>
+                        </div>
+                      </SortableItem>
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </div>
 
               {/* Education */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-foreground">Education</h3>
-                  <Button size="sm" variant="ghost" onClick={addEducation}>
-                    <Plus className="w-4 h-4 mr-1" /> Add
-                  </Button>
-                </div>
-                {resumeData.education.map((edu) => (
-                  <div key={edu.id} className="p-3 border border-border rounded-md space-y-2 bg-muted/30">
-                    <div className="flex justify-between">
-                      <Input
-                        value={edu.institution}
-                        onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
-                        placeholder="Institution"
-                        className="flex-1"
-                      />
-                      <Button size="icon" variant="ghost" onClick={() => removeEducation(edu.id)} className="ml-2 text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        value={edu.degree}
-                        onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
-                        placeholder="Degree"
-                      />
-                      <Input
-                        value={edu.year}
-                        onChange={(e) => updateEducation(edu.id, 'year', e.target.value)}
-                        placeholder="Year"
-                      />
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">Drag to reorder</span>
+                    <Button size="sm" variant="ghost" onClick={addEducation}>
+                      <Plus className="w-4 h-4 mr-1" /> Add
+                    </Button>
                   </div>
-                ))}
+                </div>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndEducation}>
+                  <SortableContext items={resumeData.education.map(edu => edu.id)} strategy={verticalListSortingStrategy}>
+                    {resumeData.education.map((edu) => (
+                      <SortableItem key={edu.id} id={edu.id}>
+                        <div className="p-3 pl-7 border border-border rounded-md space-y-2 bg-muted/30">
+                          <div className="flex justify-between">
+                            <Input
+                              value={edu.institution}
+                              onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
+                              placeholder="Institution"
+                              className="flex-1"
+                            />
+                            <Button size="icon" variant="ghost" onClick={() => removeEducation(edu.id)} className="ml-2 text-destructive hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              value={edu.degree}
+                              onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                              placeholder="Degree"
+                            />
+                            <Input
+                              value={edu.year}
+                              onChange={(e) => updateEducation(edu.id, 'year', e.target.value)}
+                              placeholder="Year"
+                            />
+                          </div>
+                        </div>
+                      </SortableItem>
+                    ))}
+                  </SortableContext>
+                </DndContext>
               </div>
             </div>
           </ScrollArea>
