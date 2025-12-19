@@ -380,8 +380,8 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {/* Projects - for fresher users */}
-            {userType === "fresher" && (
+            {/* Projects - for all users */}
+            {projects.some(p => p.name) && (
               <div className="mb-5">
                 <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Projects</h3>
                 {projects.filter(p => p.name).map((project) => (
@@ -538,60 +538,58 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {/* Projects - for fresher users */}
-            {userType === "fresher" && (
-              <div className="glass-card p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium">Projects</h2>
-                  <Button variant="outline" size="sm" onClick={addProject}>
-                    <Plus className="w-4 h-4 mr-1" /> Add
-                  </Button>
-                </div>
-                <div className="space-y-4">
-                  {projects.map((project) => (
-                    <div key={project.id} className="p-4 bg-muted/50 rounded-lg relative">
-                      {projects.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => removeProject(project.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <div className="mb-3">
-                        <Label className="text-xs">Project Name</Label>
-                        <Input
-                          placeholder="Portfolio Website"
-                          value={project.name}
-                          onChange={(e) => updateProject(project.id, "name", e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <Label className="text-xs">Description</Label>
-                        <Textarea
-                          placeholder="Describe your project..."
-                          value={project.description}
-                          onChange={(e) => updateProject(project.id, "description", e.target.value)}
-                          className="mt-1 min-h-[60px] resize-none"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Technologies Used</Label>
-                        <Input
-                          placeholder="React, Node.js, MongoDB"
-                          value={project.technologies}
-                          onChange={(e) => updateProject(project.id, "technologies", e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* Projects - for all users */}
+            <div className="glass-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-medium">Projects</h2>
+                <Button variant="outline" size="sm" onClick={addProject}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
               </div>
-            )}
+              <div className="space-y-4">
+                {projects.map((project) => (
+                  <div key={project.id} className="p-4 bg-muted/50 rounded-lg relative">
+                    {projects.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeProject(project.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <div className="mb-3">
+                      <Label className="text-xs">Project Name</Label>
+                      <Input
+                        placeholder="Portfolio Website"
+                        value={project.name}
+                        onChange={(e) => updateProject(project.id, "name", e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <Label className="text-xs">Description</Label>
+                      <Textarea
+                        placeholder="Describe your project..."
+                        value={project.description}
+                        onChange={(e) => updateProject(project.id, "description", e.target.value)}
+                        className="mt-1 min-h-[60px] resize-none"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Technologies Used</Label>
+                      <Input
+                        placeholder="React, Node.js, MongoDB"
+                        value={project.technologies}
+                        onChange={(e) => updateProject(project.id, "technologies", e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* Education */}
             <div className="glass-card p-5">
