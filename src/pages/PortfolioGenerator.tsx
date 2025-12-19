@@ -138,6 +138,12 @@ const templates = [
   },
 ];
 
+interface ValidationErrors {
+  fullName?: string;
+  email?: string;
+  title?: string;
+}
+
 const PortfolioGenerator = () => {
   const [portfolioType, setPortfolioType] = useState<PortfolioType>("custom");
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("minimal");
@@ -151,7 +157,48 @@ const PortfolioGenerator = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [resumeData, setResumeData] = useState<ResumeData>(defaultResumeData);
   const [newSkill, setNewSkill] = useState("");
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+    
+    if (!resumeData.personal.fullName.trim()) {
+      errors.fullName = "Name is required";
+    } else if (resumeData.personal.fullName.trim().length < 2) {
+      errors.fullName = "Name must be at least 2 characters";
+    }
+    
+    if (!resumeData.personal.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!validateEmail(resumeData.personal.email.trim())) {
+      errors.email = "Please enter a valid email address";
+    }
+    
+    if (!resumeData.personal.title.trim()) {
+      errors.title = "Professional title is required";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveChanges = () => {
+    if (validateForm()) {
+      setIsEditorOpen(false);
+    }
+  };
+
+  const clearFieldError = (field: keyof ValidationErrors) => {
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
 
   const handlePortfolioTypeChange = (type: PortfolioType) => {
     setPortfolioType(type);
@@ -595,29 +642,47 @@ const PortfolioGenerator = () => {
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
-                    <Label className="text-xs text-muted-foreground">Full Name</Label>
+                    <Label className="text-xs text-muted-foreground">Full Name <span className="text-destructive">*</span></Label>
                     <Input
                       value={resumeData.personal.fullName}
-                      onChange={(e) => updatePersonal('fullName', e.target.value)}
-                      className="mt-1"
+                      onChange={(e) => {
+                        updatePersonal('fullName', e.target.value);
+                        clearFieldError('fullName');
+                      }}
+                      className={`mt-1 ${validationErrors.fullName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     />
+                    {validationErrors.fullName && (
+                      <p className="text-xs text-destructive mt-1">{validationErrors.fullName}</p>
+                    )}
                   </div>
                   <div className="col-span-2">
-                    <Label className="text-xs text-muted-foreground">Professional Title</Label>
+                    <Label className="text-xs text-muted-foreground">Professional Title <span className="text-destructive">*</span></Label>
                     <Input
                       value={resumeData.personal.title}
-                      onChange={(e) => updatePersonal('title', e.target.value)}
-                      className="mt-1"
+                      onChange={(e) => {
+                        updatePersonal('title', e.target.value);
+                        clearFieldError('title');
+                      }}
+                      className={`mt-1 ${validationErrors.title ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     />
+                    {validationErrors.title && (
+                      <p className="text-xs text-destructive mt-1">{validationErrors.title}</p>
+                    )}
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Email</Label>
+                    <Label className="text-xs text-muted-foreground">Email <span className="text-destructive">*</span></Label>
                     <Input
                       type="email"
                       value={resumeData.personal.email}
-                      onChange={(e) => updatePersonal('email', e.target.value)}
-                      className="mt-1"
+                      onChange={(e) => {
+                        updatePersonal('email', e.target.value);
+                        clearFieldError('email');
+                      }}
+                      className={`mt-1 ${validationErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     />
+                    {validationErrors.email && (
+                      <p className="text-xs text-destructive mt-1">{validationErrors.email}</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Phone</Label>
@@ -834,7 +899,7 @@ const PortfolioGenerator = () => {
             <Button variant="outline" onClick={() => setIsEditorOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setIsEditorOpen(false)}>
+            <Button onClick={handleSaveChanges}>
               <Save className="w-4 h-4 mr-1" />
               Save Changes
             </Button>
