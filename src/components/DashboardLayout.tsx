@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { 
   Shell, 
   Target, 
@@ -16,20 +16,12 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  Home,
-  ArrowLeft
+  Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { icon: Target, label: "ATS Scoring", path: "/dashboard/ats-scoring" },
@@ -52,7 +44,6 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -196,44 +187,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Switch Bot dropdown */}
-            {currentBot && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="hidden sm:flex">
-                    Switch Bot
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {navItems.map((item) => (
-                    <DropdownMenuItem
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        location.pathname === item.path && "bg-primary/10 text-primary"
-                      )}
-                    >
-                      <item.icon className="w-4 h-4 mr-2" />
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
-            {/* Back to Dashboard button */}
-            {location.pathname !== "/dashboard" && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate("/dashboard")}
-                className="hidden sm:flex"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Dashboard
-              </Button>
-            )}
-
             {/* Theme toggle */}
             <Button
               variant="ghost"
