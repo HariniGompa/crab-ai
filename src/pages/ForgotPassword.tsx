@@ -3,50 +3,37 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shell, Mail, Lock, Eye, EyeOff, KeyRound, CheckCircle, Target, FileEdit, Sparkles, Check, X } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Shell, Mail, CheckCircle, Target, FileEdit, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-type Step = "email" | "otp" | "reset" | "success";
+type Step = "email" | "success";
 
 const ForgotPassword = () => {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
-  const passwordValid = password.length >= 8;
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep("otp");
-    }, 1000);
-  };
-
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep("reset");
-    }, 1000);
-  };
-
-  const handleResetSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passwordsMatch || !passwordValid) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      
       setStep("success");
-    }, 1000);
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -107,10 +94,8 @@ const ForgotPassword = () => {
 
           {/* Progress indicator */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className={`w-6 h-1 rounded-full transition-colors ${["email", "otp", "reset", "success"].includes(step) ? "bg-primary" : "bg-muted"}`} />
-            <div className={`w-6 h-1 rounded-full transition-colors ${["otp", "reset", "success"].includes(step) ? "bg-primary" : "bg-muted"}`} />
-            <div className={`w-6 h-1 rounded-full transition-colors ${["reset", "success"].includes(step) ? "bg-primary" : "bg-muted"}`} />
-            <div className={`w-6 h-1 rounded-full transition-colors ${step === "success" ? "bg-primary" : "bg-muted"}`} />
+            <div className={`w-8 h-1 rounded-full transition-colors ${step === "email" || step === "success" ? "bg-primary" : "bg-muted"}`} />
+            <div className={`w-8 h-1 rounded-full transition-colors ${step === "success" ? "bg-primary" : "bg-muted"}`} />
           </div>
 
           {step === "email" && (
@@ -120,7 +105,7 @@ const ForgotPassword = () => {
               </div>
               <h1 className="text-xl font-bold text-center mb-1">Forgot password?</h1>
               <p className="text-muted-foreground text-center mb-6 text-sm">
-                No worries, we'll send you reset instructions.
+                No worries, we'll send you a reset link.
               </p>
 
               <form onSubmit={handleEmailSubmit} className="space-y-4">
@@ -145,7 +130,7 @@ const ForgotPassword = () => {
                   className="w-full h-11" 
                   disabled={isLoading}
                 >
-                  {isLoading ? "Sending..." : "Send Reset Code"}
+                  {isLoading ? "Sending..." : "Send Reset Link"}
                 </Button>
               </form>
 
@@ -157,149 +142,14 @@ const ForgotPassword = () => {
             </>
           )}
 
-          {step === "otp" && (
-            <>
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mx-auto mb-4">
-                <KeyRound className="w-6 h-6 text-primary" />
-              </div>
-              <h1 className="text-xl font-bold text-center mb-1">Check your email</h1>
-              <p className="text-muted-foreground text-center mb-6 text-sm">
-                We sent a code to <span className="font-medium text-foreground">{email}</span>
-              </p>
-
-              <form onSubmit={handleOtpSubmit} className="space-y-6">
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-11" 
-                  disabled={otp.length < 6 || isLoading}
-                >
-                  {isLoading ? "Verifying..." : "Continue"}
-                </Button>
-              </form>
-
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Didn't receive the code?{" "}
-                <button 
-                  type="button"
-                  onClick={() => {/* Resend logic */}}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Resend
-                </button>
-              </p>
-
-              <button 
-                type="button"
-                onClick={() => setStep("email")}
-                className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ← Use a different email
-              </button>
-            </>
-          )}
-
-          {step === "reset" && (
-            <>
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mx-auto mb-4">
-                <Lock className="w-6 h-6 text-primary" />
-              </div>
-              <h1 className="text-xl font-bold text-center mb-1">Set new password</h1>
-              <p className="text-muted-foreground text-center mb-6 text-sm">
-                Must be at least 8 characters.
-              </p>
-
-              <form onSubmit={handleResetSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">New Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      className="h-11 pl-10 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {password.length > 0 && (
-                    <p className={`text-xs flex items-center gap-1 ${passwordValid ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
-                      {passwordValid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                      At least 8 characters
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      className="h-11 pl-10 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {confirmPassword.length > 0 && (
-                    <p className={`text-xs flex items-center gap-1 ${passwordsMatch ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                      {passwordsMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                      {passwordsMatch ? "Passwords match" : "Passwords do not match"}
-                    </p>
-                  )}
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-11" 
-                  disabled={isLoading || !passwordsMatch || !passwordValid}
-                >
-                  {isLoading ? "Resetting..." : "Reset Password"}
-                </Button>
-              </form>
-            </>
-          )}
-
           {step === "success" && (
             <div className="text-center">
               <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-xl font-bold mb-2">Password reset!</h1>
+              <h1 className="text-xl font-bold mb-2">Check your email</h1>
               <p className="text-muted-foreground mb-6 text-sm">
-                Your password has been successfully reset. You can now sign in with your new password.
+                We sent a password reset link to <span className="font-medium text-foreground">{email}</span>. Click the link in the email to reset your password.
               </p>
               <Button 
                 className="w-full h-11"
@@ -307,6 +157,17 @@ const ForgotPassword = () => {
               >
                 <Link to="/login">Back to Sign In</Link>
               </Button>
+              
+              <p className="text-center text-sm text-muted-foreground mt-4">
+                Didn't receive the email?{" "}
+                <button 
+                  type="button"
+                  onClick={() => setStep("email")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Try again
+                </button>
+              </p>
             </div>
           )}
         </div>

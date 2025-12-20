@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import ATSScoring from "./pages/ATSScoring";
 import ResumeMatcher from "./pages/ResumeMatcher";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/dashboard/ats-scoring" element={<ProtectedRoute><ATSScoring /></ProtectedRoute>} />
               <Route path="/dashboard/resume-matcher" element={<ProtectedRoute><ResumeMatcher /></ProtectedRoute>} />
