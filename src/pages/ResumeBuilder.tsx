@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileEdit, Plus, Trash2, Download, Eye, Upload, Check, ArrowLeft, ArrowRight, Briefcase, GraduationCap } from "lucide-react";
-
+import { FileEdit, Plus, Trash2, Download, Eye, Upload, Check, ArrowLeft, ArrowRight, Briefcase, GraduationCap, Loader2 } from "lucide-react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import { toast } from "sonner";
 interface Experience {
   id: string;
   title: string;
@@ -65,6 +67,57 @@ const ResumeBuilder = () => {
   ]);
 
   const [showPreview, setShowPreview] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const resumeRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPDF = async () => {
+    if (!resumeRef.current) {
+      toast.error("Please switch to preview mode first");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const element = resumeRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
+
+      pdf.addImage(
+        imgData,
+        "PNG",
+        imgX,
+        imgY,
+        imgWidth * ratio,
+        imgHeight * ratio
+      );
+
+      const fileName = formData.fullName 
+        ? `${formData.fullName.replace(/\s+/g, "_")}_Resume.pdf`
+        : "Resume.pdf";
+      
+      pdf.save(fileName);
+      toast.success("Resume exported successfully!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Failed to export PDF. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleUserTypeSelect = (type: UserType) => {
     setUserType(type);
@@ -325,15 +378,23 @@ const ResumeBuilder = () => {
               <Eye className="w-4 h-4 mr-1.5" />
               {showPreview ? "Edit" : "Preview"}
             </Button>
-            <Button size="sm">
-              <Download className="w-4 h-4 mr-1.5" />
-              Download
+            <Button 
+              size="sm" 
+              onClick={handleExportPDF}
+              disabled={isExporting || !showPreview}
+            >
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-1.5" />
+              )}
+              {isExporting ? "Exporting..." : "Download PDF"}
             </Button>
           </div>
         </div>
 
         {showPreview ? (
-          <div className="glass-card p-8 max-w-3xl mx-auto">
+          <div ref={resumeRef} className="bg-white text-black p-8 max-w-3xl mx-auto rounded-lg shadow-lg">
             <div className="text-center border-b border-border pb-5 mb-5">
               <h2 className="text-2xl font-bold mb-1">{formData.fullName || "Your Name"}</h2>
               <p className="text-muted-foreground text-sm">
