@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   Shell, 
   Target, 
@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-
+import { useAuth } from "@/contexts/AuthContext";
 const navItems = [
   { icon: Target, label: "ATS Scoring", path: "/dashboard/ats-scoring" },
   { icon: FileSearch, label: "Resume Matcher", path: "/dashboard/resume-matcher" },
@@ -44,11 +44,18 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { signOut } = useAuth();
 
   const currentBot = navItems.find(item => location.pathname === item.path);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-background flex w-full">
@@ -128,17 +135,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               {!sidebarCollapsed && <span>{item.label}</span>}
             </Link>
           ))}
-          <Link
-            to="/"
+          <button
+            onClick={handleLogout}
             title={sidebarCollapsed ? "Log out" : undefined}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-md text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200",
+              "flex items-center gap-3 px-3 py-2.5 rounded-md text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200 w-full",
               sidebarCollapsed && "justify-center"
             )}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             {!sidebarCollapsed && <span>Log out</span>}
-          </Link>
+          </button>
         </div>
 
         {/* Collapse toggle - desktop only */}

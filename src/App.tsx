@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -38,15 +39,15 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/ats-scoring" element={<ATSScoring />} />
-              <Route path="/dashboard/resume-matcher" element={<ResumeMatcher />} />
-              <Route path="/dashboard/resume-builder" element={<ResumeBuilder />} />
-              <Route path="/dashboard/portfolio" element={<PortfolioGenerator />} />
-              <Route path="/dashboard/skill-recommendation" element={<SkillRecommendation />} />
-              <Route path="/dashboard/interview" element={<InterviewPrep />} />
-              <Route path="/dashboard/profile" element={<Profile />} />
-              <Route path="/dashboard/files" element={<FileLibrary />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/ats-scoring" element={<ProtectedRoute><ATSScoring /></ProtectedRoute>} />
+              <Route path="/dashboard/resume-matcher" element={<ProtectedRoute><ResumeMatcher /></ProtectedRoute>} />
+              <Route path="/dashboard/resume-builder" element={<ProtectedRoute><ResumeBuilder /></ProtectedRoute>} />
+              <Route path="/dashboard/portfolio" element={<ProtectedRoute><PortfolioGenerator /></ProtectedRoute>} />
+              <Route path="/dashboard/skill-recommendation" element={<ProtectedRoute><SkillRecommendation /></ProtectedRoute>} />
+              <Route path="/dashboard/interview" element={<ProtectedRoute><InterviewPrep /></ProtectedRoute>} />
+              <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/dashboard/files" element={<ProtectedRoute><FileLibrary /></ProtectedRoute>} />
               <Route path="/help" element={<Help />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
