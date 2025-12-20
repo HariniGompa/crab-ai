@@ -1,13 +1,17 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileEdit, Plus, Trash2, Download, Eye, Upload, Check, ArrowLeft, ArrowRight, Briefcase, GraduationCap, Loader2 } from "lucide-react";
+import { FileEdit, Plus, Trash2, Download, Eye, Upload, Check, ArrowLeft, ArrowRight, Briefcase, GraduationCap, Loader2, Save, Github, Linkedin, Globe, Award, BadgeCheck, Building2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useResumes, Resume } from "@/hooks/useResumes";
+
 interface Experience {
   id: string;
   title: string;
@@ -30,6 +34,33 @@ interface Project {
   technologies: string;
 }
 
+interface ProfileLink {
+  id: string;
+  platform: string;
+  url: string;
+}
+
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+}
+
+interface Certification {
+  id: string;
+  name: string;
+  issuer: string;
+  date: string;
+}
+
+interface Internship {
+  id: string;
+  title: string;
+  company: string;
+  duration: string;
+  description: string;
+}
+
 type UserType = "fresher" | "experienced" | null;
 type BuilderStep = "user-type" | "template" | "form";
 
@@ -41,10 +72,16 @@ const templates = [
 ];
 
 const ResumeBuilder = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { canCreateResume, createResume, resumeCount, maxResumes } = useResumes();
+  
   const [step, setStep] = useState<BuilderStep>("user-type");
   const [userType, setUserType] = useState<UserType>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [customTemplate, setCustomTemplate] = useState<File | null>(null);
+  const [resumeName, setResumeName] = useState("My Resume");
+  const [isSaving, setIsSaving] = useState(false);
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -64,6 +101,22 @@ const ResumeBuilder = () => {
 
   const [projects, setProjects] = useState<Project[]>([
     { id: "1", name: "", description: "", technologies: "" }
+  ]);
+
+  const [profileLinks, setProfileLinks] = useState<ProfileLink[]>([
+    { id: "1", platform: "", url: "" }
+  ]);
+
+  const [achievements, setAchievements] = useState<Achievement[]>([
+    { id: "1", title: "", description: "" }
+  ]);
+
+  const [certifications, setCertifications] = useState<Certification[]>([
+    { id: "1", name: "", issuer: "", date: "" }
+  ]);
+
+  const [internships, setInternships] = useState<Internship[]>([
+    { id: "1", title: "", company: "", duration: "", description: "" }
   ]);
 
   const [showPreview, setShowPreview] = useState(false);
@@ -119,6 +172,38 @@ const ResumeBuilder = () => {
     }
   };
 
+  const handleSaveResume = async () => {
+    if (!user) {
+      toast.error("Please sign in to save your resume");
+      navigate("/auth");
+      return;
+    }
+
+    if (!canCreateResume()) {
+      toast.error(`Maximum of ${maxResumes} resumes allowed. Please delete an existing resume first.`);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await createResume({
+        name: resumeName || "Untitled Resume",
+        user_type: userType as 'fresher' | 'experienced',
+        template: selectedTemplate || "custom",
+        form_data: formData,
+        experiences,
+        education,
+        projects,
+        profile_links: profileLinks,
+        achievements,
+        certifications,
+        internships,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleUserTypeSelect = (type: UserType) => {
     setUserType(type);
     setStep("template");
@@ -143,68 +228,81 @@ const ResumeBuilder = () => {
     }
   };
 
+  // Experience handlers
   const addExperience = () => {
-    setExperiences([...experiences, { 
-      id: Date.now().toString(), 
-      title: "", 
-      company: "", 
-      duration: "", 
-      description: "" 
-    }]);
+    setExperiences([...experiences, { id: Date.now().toString(), title: "", company: "", duration: "", description: "" }]);
   };
-
   const removeExperience = (id: string) => {
-    if (experiences.length > 1) {
-      setExperiences(experiences.filter(e => e.id !== id));
-    }
+    if (experiences.length > 1) setExperiences(experiences.filter(e => e.id !== id));
   };
-
   const updateExperience = (id: string, field: keyof Experience, value: string) => {
-    setExperiences(experiences.map(e => 
-      e.id === id ? { ...e, [field]: value } : e
-    ));
+    setExperiences(experiences.map(e => e.id === id ? { ...e, [field]: value } : e));
   };
 
+  // Education handlers
   const addEducation = () => {
-    setEducation([...education, { 
-      id: Date.now().toString(), 
-      degree: "", 
-      institution: "", 
-      year: "" 
-    }]);
+    setEducation([...education, { id: Date.now().toString(), degree: "", institution: "", year: "" }]);
   };
-
   const removeEducation = (id: string) => {
-    if (education.length > 1) {
-      setEducation(education.filter(e => e.id !== id));
-    }
+    if (education.length > 1) setEducation(education.filter(e => e.id !== id));
   };
-
   const updateEducation = (id: string, field: keyof Education, value: string) => {
-    setEducation(education.map(e => 
-      e.id === id ? { ...e, [field]: value } : e
-    ));
+    setEducation(education.map(e => e.id === id ? { ...e, [field]: value } : e));
   };
 
+  // Project handlers
   const addProject = () => {
-    setProjects([...projects, { 
-      id: Date.now().toString(), 
-      name: "", 
-      description: "", 
-      technologies: "" 
-    }]);
+    setProjects([...projects, { id: Date.now().toString(), name: "", description: "", technologies: "" }]);
   };
-
   const removeProject = (id: string) => {
-    if (projects.length > 1) {
-      setProjects(projects.filter(p => p.id !== id));
-    }
+    if (projects.length > 1) setProjects(projects.filter(p => p.id !== id));
+  };
+  const updateProject = (id: string, field: keyof Project, value: string) => {
+    setProjects(projects.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
-  const updateProject = (id: string, field: keyof Project, value: string) => {
-    setProjects(projects.map(p => 
-      p.id === id ? { ...p, [field]: value } : p
-    ));
+  // Profile Links handlers
+  const addProfileLink = () => {
+    setProfileLinks([...profileLinks, { id: Date.now().toString(), platform: "", url: "" }]);
+  };
+  const removeProfileLink = (id: string) => {
+    if (profileLinks.length > 1) setProfileLinks(profileLinks.filter(p => p.id !== id));
+  };
+  const updateProfileLink = (id: string, field: keyof ProfileLink, value: string) => {
+    setProfileLinks(profileLinks.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
+
+  // Achievements handlers
+  const addAchievement = () => {
+    setAchievements([...achievements, { id: Date.now().toString(), title: "", description: "" }]);
+  };
+  const removeAchievement = (id: string) => {
+    if (achievements.length > 1) setAchievements(achievements.filter(a => a.id !== id));
+  };
+  const updateAchievement = (id: string, field: keyof Achievement, value: string) => {
+    setAchievements(achievements.map(a => a.id === id ? { ...a, [field]: value } : a));
+  };
+
+  // Certifications handlers
+  const addCertification = () => {
+    setCertifications([...certifications, { id: Date.now().toString(), name: "", issuer: "", date: "" }]);
+  };
+  const removeCertification = (id: string) => {
+    if (certifications.length > 1) setCertifications(certifications.filter(c => c.id !== id));
+  };
+  const updateCertification = (id: string, field: keyof Certification, value: string) => {
+    setCertifications(certifications.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+
+  // Internships handlers
+  const addInternship = () => {
+    setInternships([...internships, { id: Date.now().toString(), title: "", company: "", duration: "", description: "" }]);
+  };
+  const removeInternship = (id: string) => {
+    if (internships.length > 1) setInternships(internships.filter(i => i.id !== id));
+  };
+  const updateInternship = (id: string, field: keyof Internship, value: string) => {
+    setInternships(internships.map(i => i.id === id ? { ...i, [field]: value } : i));
   };
 
   // User Type Selection Step
@@ -221,6 +319,14 @@ const ResumeBuilder = () => {
               <p className="text-muted-foreground text-sm">Let's create your professional resume</p>
             </div>
           </div>
+
+          {user && (
+            <div className="mb-6 p-4 glass-card">
+              <p className="text-sm text-muted-foreground">
+                Resumes saved: <span className="font-semibold text-foreground">{resumeCount}/{maxResumes}</span>
+              </p>
+            </div>
+          )}
 
           <div className="glass-card p-8 text-center">
             <h2 className="text-lg font-semibold mb-2">What describes you best?</h2>
@@ -350,7 +456,7 @@ const ResumeBuilder = () => {
     );
   }
 
-  // Form Step (existing functionality)
+  // Form Step
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto">
@@ -379,6 +485,19 @@ const ResumeBuilder = () => {
               {showPreview ? "Edit" : "Preview"}
             </Button>
             <Button 
+              variant="outline"
+              size="sm" 
+              onClick={handleSaveResume}
+              disabled={isSaving || !user}
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-1.5" />
+              )}
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+            <Button 
               size="sm" 
               onClick={handleExportPDF}
               disabled={isExporting || !showPreview}
@@ -395,26 +514,35 @@ const ResumeBuilder = () => {
 
         {showPreview ? (
           <div ref={resumeRef} className="bg-white text-black p-8 max-w-3xl mx-auto rounded-lg shadow-lg">
-            <div className="text-center border-b border-border pb-5 mb-5">
-              <h2 className="text-2xl font-bold mb-1">{formData.fullName || "Your Name"}</h2>
-              <p className="text-muted-foreground text-sm">
+            <div className="text-center border-b border-gray-200 pb-5 mb-5">
+              <h2 className="text-2xl font-bold mb-1 text-gray-900">{formData.fullName || "Your Name"}</h2>
+              <p className="text-gray-600 text-sm">
                 {formData.email} {formData.phone && `• ${formData.phone}`}
               </p>
+              {profileLinks.some(p => p.url) && (
+                <div className="flex justify-center gap-3 mt-2 flex-wrap">
+                  {profileLinks.filter(p => p.url).map((link) => (
+                    <span key={link.id} className="text-xs text-blue-600">
+                      {link.platform}: {link.url}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {formData.summary && (
               <div className="mb-5">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Summary</h3>
-                <p className="text-muted-foreground text-sm">{formData.summary}</p>
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-2">Summary</h3>
+                <p className="text-gray-600 text-sm">{formData.summary}</p>
               </div>
             )}
 
             {formData.skills && (
               <div className="mb-5">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">Skills</h3>
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-2">Skills</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {formData.skills.split(",").map((skill, i) => (
-                    <span key={i} className="px-2 py-0.5 bg-muted rounded text-xs">
+                    <span key={i} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
                       {skill.trim()}
                     </span>
                   ))}
@@ -423,57 +551,120 @@ const ResumeBuilder = () => {
             )}
 
             {/* Experience - only for experienced users */}
-            {userType === "experienced" && (
+            {userType === "experienced" && experiences.some(e => e.title) && (
               <div className="mb-5">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Experience</h3>
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Experience</h3>
                 {experiences.filter(e => e.title).map((exp) => (
                   <div key={exp.id} className="mb-3">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-medium text-sm">{exp.title}</h4>
-                        <p className="text-primary text-sm">{exp.company}</p>
+                        <h4 className="font-medium text-sm text-gray-900">{exp.title}</h4>
+                        <p className="text-blue-600 text-sm">{exp.company}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground">{exp.duration}</span>
+                      <span className="text-xs text-gray-500">{exp.duration}</span>
                     </div>
-                    <p className="text-muted-foreground mt-1 text-xs">{exp.description}</p>
+                    <p className="text-gray-600 mt-1 text-xs">{exp.description}</p>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Projects - for all users */}
+            {/* Internships */}
+            {internships.some(i => i.title) && (
+              <div className="mb-5">
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Internships</h3>
+                {internships.filter(i => i.title).map((intern) => (
+                  <div key={intern.id} className="mb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-sm text-gray-900">{intern.title}</h4>
+                        <p className="text-blue-600 text-sm">{intern.company}</p>
+                      </div>
+                      <span className="text-xs text-gray-500">{intern.duration}</span>
+                    </div>
+                    <p className="text-gray-600 mt-1 text-xs">{intern.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Projects */}
             {projects.some(p => p.name) && (
               <div className="mb-5">
-                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Projects</h3>
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Projects</h3>
                 {projects.filter(p => p.name).map((project) => (
                   <div key={project.id} className="mb-3">
-                    <h4 className="font-medium text-sm">{project.name}</h4>
-                    <p className="text-muted-foreground mt-1 text-xs">{project.description}</p>
+                    <h4 className="font-medium text-sm text-gray-900">{project.name}</h4>
+                    <p className="text-gray-600 mt-1 text-xs">{project.description}</p>
                     {project.technologies && (
-                      <p className="text-xs text-primary mt-1">Tech: {project.technologies}</p>
+                      <p className="text-xs text-blue-600 mt-1">Tech: {project.technologies}</p>
                     )}
                   </div>
                 ))}
               </div>
             )}
 
-            <div>
-              <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Education</h3>
-              {education.filter(e => e.degree).map((edu) => (
-                <div key={edu.id} className="mb-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium text-sm">{edu.degree}</h4>
-                      <p className="text-primary text-sm">{edu.institution}</p>
+            {/* Education */}
+            {education.some(e => e.degree) && (
+              <div className="mb-5">
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Education</h3>
+                {education.filter(e => e.degree).map((edu) => (
+                  <div key={edu.id} className="mb-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-sm text-gray-900">{edu.degree}</h4>
+                        <p className="text-blue-600 text-sm">{edu.institution}</p>
+                      </div>
+                      <span className="text-xs text-gray-500">{edu.year}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{edu.year}</span>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* Certifications */}
+            {certifications.some(c => c.name) && (
+              <div className="mb-5">
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Certifications</h3>
+                {certifications.filter(c => c.name).map((cert) => (
+                  <div key={cert.id} className="mb-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-sm text-gray-900">{cert.name}</h4>
+                        <p className="text-blue-600 text-sm">{cert.issuer}</p>
+                      </div>
+                      <span className="text-xs text-gray-500">{cert.date}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Achievements */}
+            {achievements.some(a => a.title) && (
+              <div className="mb-5">
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-3">Achievements</h3>
+                {achievements.filter(a => a.title).map((achievement) => (
+                  <div key={achievement.id} className="mb-2">
+                    <h4 className="font-medium text-sm text-gray-900">{achievement.title}</h4>
+                    <p className="text-gray-600 text-xs">{achievement.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Resume Name */}
+            <div className="glass-card p-5">
+              <h2 className="font-medium mb-3">Resume Name</h2>
+              <Input
+                placeholder="My Resume"
+                value={resumeName}
+                onChange={(e) => setResumeName(e.target.value)}
+              />
+            </div>
+
             {/* Personal Info */}
             <div className="glass-card p-5">
               <h2 className="font-medium mb-4">Personal Information</h2>
@@ -512,6 +703,55 @@ const ResumeBuilder = () => {
               </div>
             </div>
 
+            {/* Profile Links */}
+            <div className="glass-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-primary" />
+                  <h2 className="font-medium">Profile Links</h2>
+                </div>
+                <Button variant="outline" size="sm" onClick={addProfileLink}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {profileLinks.map((link) => (
+                  <div key={link.id} className="p-4 bg-muted/50 rounded-lg relative">
+                    {profileLinks.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeProfileLink(link.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Platform (e.g., GitHub, LinkedIn)</Label>
+                        <Input
+                          placeholder="GitHub"
+                          value={link.platform}
+                          onChange={(e) => updateProfileLink(link.id, "platform", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">URL</Label>
+                        <Input
+                          placeholder="https://github.com/username"
+                          value={link.url}
+                          onChange={(e) => updateProfileLink(link.id, "url", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Summary */}
             <div className="glass-card p-5">
               <h2 className="font-medium mb-3">Professional Summary</h2>
@@ -537,7 +777,10 @@ const ResumeBuilder = () => {
             {userType === "experienced" && (
               <div className="glass-card p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium">Work Experience</h2>
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-primary" />
+                    <h2 className="font-medium">Work Experience</h2>
+                  </div>
                   <Button variant="outline" size="sm" onClick={addExperience}>
                     <Plus className="w-4 h-4 mr-1" /> Add
                   </Button>
@@ -599,7 +842,74 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {/* Projects - for all users */}
+            {/* Internships */}
+            <div className="glass-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  <h2 className="font-medium">Internships</h2>
+                </div>
+                <Button variant="outline" size="sm" onClick={addInternship}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {internships.map((intern) => (
+                  <div key={intern.id} className="p-4 bg-muted/50 rounded-lg relative">
+                    {internships.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeInternship(intern.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <Label className="text-xs">Title</Label>
+                        <Input
+                          placeholder="Software Engineering Intern"
+                          value={intern.title}
+                          onChange={(e) => updateInternship(intern.id, "title", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Company</Label>
+                        <Input
+                          placeholder="Tech Startup"
+                          value={intern.company}
+                          onChange={(e) => updateInternship(intern.id, "company", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <Label className="text-xs">Duration</Label>
+                      <Input
+                        placeholder="Jun 2023 - Aug 2023"
+                        value={intern.duration}
+                        onChange={(e) => updateInternship(intern.id, "duration", e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Description</Label>
+                      <Textarea
+                        placeholder="Describe your internship responsibilities..."
+                        value={intern.description}
+                        onChange={(e) => updateInternship(intern.id, "description", e.target.value)}
+                        className="mt-1 min-h-[60px] resize-none"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Projects */}
             <div className="glass-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-medium">Projects</h2>
@@ -655,7 +965,10 @@ const ResumeBuilder = () => {
             {/* Education */}
             <div className="glass-card p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-medium">Education</h2>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-primary" />
+                  <h2 className="font-medium">Education</h2>
+                </div>
                 <Button variant="outline" size="sm" onClick={addEducation}>
                   <Plus className="w-4 h-4 mr-1" /> Add
                 </Button>
@@ -701,6 +1014,111 @@ const ResumeBuilder = () => {
                           className="mt-1"
                         />
                       </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Certifications */}
+            <div className="glass-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="w-5 h-5 text-primary" />
+                  <h2 className="font-medium">Certifications</h2>
+                </div>
+                <Button variant="outline" size="sm" onClick={addCertification}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {certifications.map((cert) => (
+                  <div key={cert.id} className="p-4 bg-muted/50 rounded-lg relative">
+                    {certifications.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeCertification(cert.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Certification Name</Label>
+                        <Input
+                          placeholder="AWS Solutions Architect"
+                          value={cert.name}
+                          onChange={(e) => updateCertification(cert.id, "name", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Issuing Organization</Label>
+                        <Input
+                          placeholder="Amazon Web Services"
+                          value={cert.issuer}
+                          onChange={(e) => updateCertification(cert.id, "issuer", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Date</Label>
+                        <Input
+                          placeholder="Jan 2024"
+                          value={cert.date}
+                          onChange={(e) => updateCertification(cert.id, "date", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Achievements */}
+            <div className="glass-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-primary" />
+                  <h2 className="font-medium">Achievements</h2>
+                </div>
+                <Button variant="outline" size="sm" onClick={addAchievement}>
+                  <Plus className="w-4 h-4 mr-1" /> Add
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {achievements.map((achievement) => (
+                  <div key={achievement.id} className="p-4 bg-muted/50 rounded-lg relative">
+                    {achievements.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeAchievement(achievement.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <div className="mb-3">
+                      <Label className="text-xs">Achievement Title</Label>
+                      <Input
+                        placeholder="Dean's List"
+                        value={achievement.title}
+                        onChange={(e) => updateAchievement(achievement.id, "title", e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Description</Label>
+                      <Textarea
+                        placeholder="Describe your achievement..."
+                        value={achievement.description}
+                        onChange={(e) => updateAchievement(achievement.id, "description", e.target.value)}
+                        className="mt-1 min-h-[60px] resize-none"
+                      />
                     </div>
                   </div>
                 ))}
