@@ -2,13 +2,13 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Mail, Camera, FolderOpen, FileText, Trash2, Calendar, Edit, Plus } from "lucide-react";
+import { User, Mail, Camera, FolderOpen, FileText, Trash2, Calendar, Edit } from "lucide-react";
 import { useResumes } from "@/hooks/useResumes";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 const Profile = () => {
-  const { resumes, loading, resumeCount, maxResumes, deleteResume, canCreateResume } = useResumes();
+  const { resumes, loading, resumeCount, maxResumes, deleteResume } = useResumes();
   const navigate = useNavigate();
 
   const handleEdit = (resumeId: string) => {
@@ -21,9 +21,6 @@ const Profile = () => {
     }
   };
 
-  const handleCreate = () => {
-    navigate("/resume-builder");
-  };
 
   return (
     <DashboardLayout>
@@ -92,7 +89,7 @@ const Profile = () => {
 
           {/* Resume Library Section */}
           <div className="glass-card overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between">
+            <div className="p-6 border-b border-border">
               <div className="flex items-center gap-3">
                 <FolderOpen className="w-5 h-5 text-primary" />
                 <div>
@@ -102,12 +99,6 @@ const Profile = () => {
                   </p>
                 </div>
               </div>
-              {canCreateResume() && (
-                <Button onClick={handleCreate} size="sm" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  New
-                </Button>
-              )}
             </div>
             
             {loading ? (
@@ -118,13 +109,9 @@ const Profile = () => {
               <div className="p-8 text-center">
                 <FolderOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
                 <h3 className="font-medium mb-1">No Resumes Yet</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Create your first resume to get started.
+                <p className="text-sm text-muted-foreground">
+                  Create a resume in Resume Builder to see it here.
                 </p>
-                <Button onClick={handleCreate} size="sm" className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Create Resume
-                </Button>
               </div>
             ) : (
               <div className="divide-y divide-border">
