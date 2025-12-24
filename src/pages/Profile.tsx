@@ -48,7 +48,7 @@ const Profile = () => {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("display_name, avatar_id")
+          .select("display_name, avatar_url")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -59,9 +59,9 @@ const Profile = () => {
           setOriginalName(data.display_name);
         }
 
-        if (data?.avatar_id) {
-          setSelectedAvatar(data.avatar_id);
-          setOriginalAvatar(data.avatar_id);
+        if (data?.avatar_url) {
+          setSelectedAvatar(data.avatar_url);
+          setOriginalAvatar(data.avatar_url);
         }
       } catch (err) {
         console.error(err);
@@ -87,7 +87,7 @@ const Profile = () => {
         .from("profiles")
         .update({
           display_name: displayName.trim(),
-          avatar_id: selectedAvatar,
+          avatar_url: selectedAvatar,
         })
         .eq("user_id", user.id);
 
@@ -135,11 +135,9 @@ const Profile = () => {
         {/* HEADER */}
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-xl ocean-gradient flex items-center justify-center">
-            {selectedAvatar ? (
+          {selectedAvatar ? (
               <img
-                src={
-                  AVATARS.find((a) => a.id === selectedAvatar)?.src
-                }
+                src={selectedAvatar}
                 alt="Avatar"
                 className="w-full h-full rounded-xl object-cover"
               />
@@ -164,10 +162,10 @@ const Profile = () => {
               <button
                 key={avatar.id}
                 aria-label={avatar.label}
-                onClick={() => setSelectedAvatar(avatar.id)}
+                onClick={() => setSelectedAvatar(avatar.src)}
                 className={`rounded-full p-1 border-2 transition
                   ${
-                    selectedAvatar === avatar.id
+                    selectedAvatar === avatar.src
                       ? "border-primary"
                       : "border-transparent hover:border-muted"
                   }
