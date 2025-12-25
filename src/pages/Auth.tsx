@@ -11,7 +11,6 @@ import { Loader2, FileText } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
 const Auth = () => {
   const [email, setEmail] = useState("");
