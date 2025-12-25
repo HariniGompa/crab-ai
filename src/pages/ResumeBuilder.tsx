@@ -260,6 +260,16 @@ const ResumeBuilder = () => {
     if (projects.length > 1) setProjects(projects.filter(p => p.id !== id));
   };
   const updateProject = (id: string, field: keyof Project, value: string) => {
+    // Validate GitHub URL if the field is githubLink
+    if (field === "githubLink" && value) {
+      const githubUrlPattern = /^https?:\/\/(www\.)?github\.com\/[\w-]+\/[\w.-]+\/?$/i;
+      if (!githubUrlPattern.test(value)) {
+        // Only show toast on blur or when URL looks complete (has github.com and a path)
+        if (value.includes("github.com/") && value.split("/").length >= 4) {
+          toast.error("Please enter a valid GitHub repository URL (e.g., https://github.com/username/repo)");
+        }
+      }
+    }
     setProjects(projects.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
