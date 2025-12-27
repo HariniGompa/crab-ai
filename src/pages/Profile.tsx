@@ -12,10 +12,10 @@ import {
   Calendar,
   Edit,
   Loader2,
-  Upload,
   Globe,
   Eye,
-  RefreshCw,
+  X,
+  Pencil,
 } from "lucide-react";
 import { useResumes } from "@/hooks/useResumes";
 import { useNavigate } from "react-router-dom";
@@ -23,7 +23,6 @@ import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AVATARS } from "@/constants/avatars";
 
 const Profile = () => {
   const { resumes, loading, resumeCount, maxResumes, deleteResume } =
@@ -34,27 +33,15 @@ const Profile = () => {
 
   const [displayName, setDisplayName] = useState("");
   const [originalName, setOriginalName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
-  const [originalAvatar, setOriginalAvatar] = useState<string | null>(null);
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   
-  // Portfolio file state (UI-only, single file)
+  // Portfolio file state (UI-only, single file - stores bot-generated portfolio)
   const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
   const [portfolioFileName, setPortfolioFileName] = useState<string | null>(null);
-
-  const handlePortfolioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.name.endsWith('.html')) {
-      setPortfolioFile(file);
-      setPortfolioFileName(file.name);
-      toast({ title: "Portfolio uploaded", description: file.name });
-    } else {
-      toast({ title: "Invalid file", description: "Please upload an HTML file", variant: "destructive" });
-    }
-  };
 
   const handleViewPortfolio = () => {
     if (portfolioFile) {
@@ -63,9 +50,10 @@ const Profile = () => {
     }
   };
 
-  const handleReplacePortfolio = () => {
+  const handleRemovePortfolio = () => {
     setPortfolioFile(null);
     setPortfolioFileName(null);
+    toast({ title: "Portfolio removed" });
   };
 
   /* ---------------- FETCH PROFILE ---------------- */
@@ -79,7 +67,7 @@ const Profile = () => {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url")
+          .select("display_name")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -88,11 +76,6 @@ const Profile = () => {
         if (data?.display_name) {
           setDisplayName(data.display_name);
           setOriginalName(data.display_name);
-        }
-
-        if (data?.avatar_url) {
-          setSelectedAvatar(data.avatar_url);
-          setOriginalAvatar(data.avatar_url);
         }
       } catch (err) {
         console.error(err);
@@ -104,9 +87,7 @@ const Profile = () => {
     fetchProfile();
   }, [user]);
 
-  const isDirty =
-    displayName.trim() !== originalName ||
-    selectedAvatar !== originalAvatar;
+  const isDirty = displayName.trim() !== originalName;
 
   /* ---------------- SAVE PROFILE ---------------- */
   const handleSave = async () => {
@@ -118,14 +99,13 @@ const Profile = () => {
         .from("profiles")
         .update({
           display_name: displayName.trim(),
-          avatar_url: selectedAvatar,
         })
         .eq("user_id", user.id);
 
       if (error) throw error;
 
       setOriginalName(displayName.trim());
-      setOriginalAvatar(selectedAvatar);
+      setIsEditing(false);
 
       toast({ title: "Profile updated" });
     } catch {
@@ -166,15 +146,7 @@ const Profile = () => {
         {/* HEADER */}
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-xl ocean-gradient flex items-center justify-center">
-          {selectedAvatar ? (
-              <img
-                src={selectedAvatar}
-                alt="Avatar"
-                className="w-full h-full rounded-xl object-cover"
-              />
-            ) : (
-              <User className="w-7 h-7 text-primary-foreground" />
-            )}
+            <User className="w-7 h-7 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Profile</h1>
@@ -184,39 +156,21 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* AVATAR SELECTION */}
-        <div className="glass-card p-6">
-          <h2 className="font-semibold mb-4">Choose Avatar</h2>
-
-          <div className="grid grid-cols-4 gap-4">
-            {AVATARS.map((avatar) => (
-              <button
-                key={avatar.id}
-                aria-label={avatar.label}
-                onClick={() => setSelectedAvatar(avatar.src)}
-                className={`rounded-full p-1 border-2 transition
-                  ${
-                    selectedAvatar === avatar.src
-                      ? "border-primary"
-                      : "border-transparent hover:border-muted"
-                  }
-                `}
-              >
-                <img
-                  src={avatar.src}
-                  alt={avatar.label}
-                  className="w-16 h-16 rounded-full"
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* PERSONAL INFO */}
         <div className="glass-card p-6">
-          <h2 className="font-semibold mb-4">
-            Personal Information
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Personal Information</h2>
+            {!isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            )}
+          </div>
 
           {profileLoading ? (
             <div className="flex justify-center py-4">
@@ -226,12 +180,16 @@ const Profile = () => {
             <div className="space-y-4">
               <div>
                 <Label>Display Name</Label>
-                <Input
-                  value={displayName}
-                  onChange={(e) =>
-                    setDisplayName(e.target.value)
-                  }
-                />
+                {isEditing ? (
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                ) : (
+                  <p className="text-sm py-2 px-3 bg-muted/40 rounded-md">
+                    {displayName || "Not set"}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -245,6 +203,36 @@ const Profile = () => {
                   />
                 </div>
               </div>
+
+              {isEditing && (
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="hero"
+                    size="sm"
+                    disabled={saving || !isDirty}
+                    onClick={handleSave}
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving…
+                      </>
+                    ) : (
+                      "Save"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDisplayName(originalName);
+                      setIsEditing(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -337,7 +325,7 @@ const Profile = () => {
               <div>
                 <h2 className="font-semibold">Portfolio File</h2>
                 <p className="text-sm text-muted-foreground">
-                  Store one HTML portfolio file
+                  Generated portfolios from Portfolio Generator bot
                 </p>
               </div>
             </div>
@@ -365,27 +353,20 @@ const Profile = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={handleReplacePortfolio}
-                    aria-label="Replace portfolio"
+                    onClick={handleRemovePortfolio}
+                    aria-label="Remove portfolio"
                   >
-                    <RefreshCw className="w-4 h-4" />
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="border border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                <input
-                  type="file"
-                  id="portfolio-upload"
-                  accept=".html"
-                  onChange={handlePortfolioUpload}
-                  className="hidden"
-                />
-                <label htmlFor="portfolio-upload" className="cursor-pointer">
-                  <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
-                  <p className="font-medium text-sm mb-1">Upload Portfolio</p>
-                  <p className="text-xs text-muted-foreground">HTML file only (single file)</p>
-                </label>
+              <div className="border border-dashed border-border rounded-lg p-6 text-center">
+                <Globe className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+                <p className="font-medium text-sm mb-1">No Portfolio Generated</p>
+                <p className="text-xs text-muted-foreground">
+                  Use the Portfolio Generator bot to create your portfolio
+                </p>
               </div>
             )}
           </div>
@@ -410,22 +391,6 @@ const Profile = () => {
           </Button>
         </div>
 
-        {/* SAVE */}
-        <Button
-          variant="hero"
-          size="lg"
-          disabled={saving || !isDirty}
-          onClick={handleSave}
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving…
-            </>
-          ) : (
-            "Save Changes"
-          )}
-        </Button>
       </div>
     </DashboardLayout>
   );
